@@ -1,3 +1,4 @@
+# Author : Kiran Praveen
 import numpy as np
 
 # Collapses repeating characters in a sequence.
