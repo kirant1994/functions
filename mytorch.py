@@ -40,6 +40,8 @@ class DataParallel(torch.nn.DataParallel):
 # Inputs : Tensor of shape (batch_size, time_steps, dimension), left_context, mid_context, right_context
 # Outputs : Chunked input tensor, original time
 def chunk(X, left, mid, right):
+    if left > mid or right > mid:
+    	return _chunk_extended(X, left, mid, right)
     N, t, d = X.shape
     n_chunks = int(np.ceil(float(t) / mid))
     t_new = n_chunks * mid
@@ -51,6 +53,26 @@ def chunk(X, left, mid, right):
     X_right = X[:, :, :right, :]
     X_right = torch.roll(X_right, -1, 1)
     X = torch.cat([X_left, X, X_right], dim=2)
+    return X, t
+
+# Extended support for chunking when left or right > mid.
+# Not using this by default because using lists worsen the performance by a small amount.
+def _chunk_extended(X, left, mid, right):
+    N, t, d = X.shape
+    n_chunks = int(np.ceil(float(t) / mid))
+    t_new = n_chunks * mid
+    t_extra = t_new - t
+    X = torch.nn.functional.pad(X, pad=(0, 0, 0, t_extra), mode='constant', value=0)
+    X = X.view((N, n_chunks, mid, d))
+
+    left_reps = int(np.ceil(float(left) / mid))
+    right_reps = int(np.ceil(float(right) / mid))
+    X_list = []
+    for roll in range(left_reps, -(right_reps+1), -1):
+        X_list.append(torch.roll(X, roll, 1))
+    X = torch.cat(X_list, dim=2)
+    zero_index = mid * left_reps
+    X = X[:, :, zero_index - left: zero_index + mid + right, :].contiguous()
     return X, t
 
 # Inverse of the chunking operation.
