@@ -103,7 +103,7 @@ def _chunk_extended(X, left, mid, right, strict=False):
 # Output : Tensor of shape same as input to the chunk() function
 def unchunk(X, left, mid, right, t_original):
     # Handling single dimensional inputs which are squeezed.
-    was_unsqueezed = True
+    was_unsqueezed = False
     if len(X.shape) == 3:
         X = X.unsqueeze(3)
         was_unsqueezed = True
