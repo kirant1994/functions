@@ -1,12 +1,17 @@
 import numpy as np
 
 class WordMap:
-    def __init__(self, words):
+    def __init__(self, words, add_spaces=True, iterable=False):
         self.markers = ['<s>', '<e>']
         self.words = [item.upper() for item in np.unique(words)]
         self.words = ['_'] + self.markers + [' ', '<unk>'] + self.words
         self.int2word = dict(zip(np.arange(0, len(self.words)), self.words))
         self.word2int = dict(zip(self.words, np.arange(0, len(self.words))))
+        self.add_spaces = add_spaces
+        self.iterable = iterable
+    
+    def __len__(self):
+        return len(self.words)
 
     # If add_spaces is True, a space will be added in between every word
     # If iterable is True, the sentence won't be split by spaces
@@ -29,11 +34,14 @@ class WordMap:
         return result
 
     def int_to_word(self, int_list):
-        print(int_list)
         result = [self.int2word[item] for item in int_list]
         return result
 
-    def word_to_int_batched(self, sentences, add_spaces=True, iterable=False):
+    def word_to_int_batched(self, sentences, add_spaces=None, iterable=None):
+        if add_spaces is None:
+            add_spaces = self.add_spaces
+        if iterable is None:
+            iterable = self.iterable
         outs = [self.word_to_int(item, add_spaces=add_spaces, iterable=iterable) for item in sentences]
         lens = [len(item) for item in outs]
         mx_len = np.max(lens)
@@ -49,6 +57,7 @@ class WordMap:
                 temp_str += item
             if item  == '<e>':
                 break
+        temp_str = temp_str.replace('_', '')
         return temp_str
     
     def int_to_word_batched(self, int_lists):
